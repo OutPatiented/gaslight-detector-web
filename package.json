@@ -1,0 +1,9 @@
+{
+  "name": "gaslight-detector",
+  "version": "1.0.0",
+  "description": "Gaslight Detector with OpenAI + Netlify Functions",
+  "type": "commonjs",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}

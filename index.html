@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gaslight Detector</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #eee; padding: 2em; }
+    #chat { max-width: 600px; margin: auto; }
+    textarea { width: 100%; padding: 1em; background: #222; color: #fff; border: none; margin-top: 1em; }
+    button { padding: 1em; background: #4CAF50; color: white; border: none; cursor: pointer; }
+    pre { background: #222; padding: 1em; white-space: pre-wrap; word-wrap: break-word; margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <h1>Gaslight Detector</h1>
+    <textarea id="input" rows="6" placeholder="Paste your conversation here..."></textarea>
+    <button onclick="analyze()">Analyze</button>
+    <pre id="output"></pre>
+  </div>
+  <script>
+    async function analyze() {
+      const input = document.getElementById('input').value;
+      const output = document.getElementById('output');
+      output.textContent = "Analyzing...";
+      try {
+        const res = await fetch("/.netlify/functions/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: input }),
+        });
+        const data = await res.json();
+        output.textContent = data.result || "No result returned.";
+      } catch (err) {
+        output.textContent = "Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
