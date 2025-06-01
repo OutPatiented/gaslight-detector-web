@@ -1,115 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Am I Being Gaslit? - Free AI Detector Tool</title>
-  <meta name="description" content="Feeling confused about your conversations? Get instant AI analysis to detect manipulation, gaslighting, and toxic patterns. Free, private, and immediate results.">
-  <!-- Styles omitted for brevity, assuming they're the same -->
-</head>
-<body>
-  <!-- UI HTML structure omitted for brevity, keep your existing layout -->
+const fetch = require('node-fetch');
 
-  <script>
-    async function analyzeConversation() {
-      const input = document.getElementById('conversationInput');
-      const btn = document.getElementById('analyzeBtn');
-      const btnText = document.getElementById('btnText');
-      const spinner = document.getElementById('loadingSpinner');
-      const resultsSection = document.getElementById('resultsSection');
-      const resultsContent = document.getElementById('resultsContent');
-      const resultsCard = document.getElementById('resultsCard');
-      const resultsTitle = document.getElementById('resultsTitle');
+exports.handler = async function(event, context) {
+  try {
+    const { text } = JSON.parse(event.body);
 
-      const text = input.value.trim();
-      if (!text) {
-        input.focus();
-        input.style.borderColor = '#e53e3e';
-        setTimeout(() => {
-          input.style.borderColor = '#e2e8f0';
-        }, 2000);
-        return;
-      }
-
-      btn.disabled = true;
-      btnText.innerHTML = '🔍 Analyzing Your Conversation...';
-      spinner.style.display = 'inline-block';
-      resultsSection.classList.remove('show');
-
-      try {
-        const response = await fetch("/.netlify/functions/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text }),
-        });
-
-        const data = await response.json();
-
-        if (data.detected && Array.isArray(data.tactics) && data.tactics.length > 0) {
-          const formatted = data.tactics.map(item =>
-            `Line ${item.line}: “${item.excerpt}”\n→ Tactic: ${item.tactic}`
-          ).join('\n\n');
-
-          resultsContent.textContent = formatted;
-
-          resultsCard.className = 'results-card warning-medium';
-          resultsTitle.innerHTML = `
-            <svg class="results-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            🔍 Tactics Detected
-          `;
-        } else {
-          resultsContent.textContent = "✅ No obvious manipulation tactics were detected. Trust your instincts and reflect on how the conversation made you feel.";
-          resultsCard.className = 'results-card warning-low';
-          resultsTitle.innerHTML = `
-            <svg class="results-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            ✅ Looking Good!
-          `;
-        }
-
-        setTimeout(() => {
-          resultsSection.classList.add('show');
-          resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-
-      } catch (error) {
-        resultsContent.textContent = "We're sorry, but there was a technical issue analyzing your conversation. Please try again in a moment.";
-        resultsCard.className = 'results-card warning-high';
-        resultsTitle.innerHTML = `
-          <svg class="results-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-          </svg>
-          ❌ Analysis Error
-        `;
-        resultsSection.classList.add('show');
-        console.error('Analysis error:', error);
-      } finally {
-        btn.disabled = false;
-        btnText.innerHTML = '🚀 Analyze Now - It\'s Free!';
-        spinner.style.display = 'none';
-      }
+    if (!text || typeof text !== 'string') {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Invalid input text.' }),
+      };
     }
 
-    function resetForm() {
-      document.getElementById('conversationInput').value = '';
-      document.getElementById('resultsSection').classList.remove('show');
-      document.getElementById('conversationInput').focus();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    // Simulate analysis logic
+    const detected = text.includes('manipulation');
+    const tactics = detected
+      ? [
+          {
+            line: 1,
+            excerpt: 'manipulation',
+            tactic: 'Gaslighting',
+          },
+        ]
+      : [];
 
-    document.getElementById('conversationInput').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        analyzeConversation();
-      }
-    });
-
-    window.addEventListener('load', function() {
-      document.getElementById('conversationInput').focus();
-    });
-  </script>
-</body>
-</html>
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ detected, tactics }),
+    };
+  } catch (error) {
+    console.error('Error processing request:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Internal Server Error' }),
+    };
+  }
+};
