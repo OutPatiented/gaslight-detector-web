@@ -1,100 +1,115 @@
-// netlify/functions/analyze.js
-const fetch = require("node-fetch");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Am I Being Gaslit? - Free AI Detector Tool</title>
+  <meta name="description" content="Feeling confused about your conversations? Get instant AI analysis to detect manipulation, gaslighting, and toxic patterns. Free, private, and immediate results.">
+  <!-- Styles omitted for brevity, assuming they're the same -->
+</head>
+<body>
+  <!-- UI HTML structure omitted for brevity, keep your existing layout -->
 
-exports.handler = async function(event, context) {
-  // only POST accepted
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: "Method Not Allowed" })
-    };
-  }
+  <script>
+    async function analyzeConversation() {
+      const input = document.getElementById('conversationInput');
+      const btn = document.getElementById('analyzeBtn');
+      const btnText = document.getElementById('btnText');
+      const spinner = document.getElementById('loadingSpinner');
+      const resultsSection = document.getElementById('resultsSection');
+      const resultsContent = document.getElementById('resultsContent');
+      const resultsCard = document.getElementById('resultsCard');
+      const resultsTitle = document.getElementById('resultsTitle');
 
-  const { text } = JSON.parse(event.body);
-  if (!text || !text.trim()) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "No text provided" })
-    };
-  }
+      const text = input.value.trim();
+      if (!text) {
+        input.focus();
+        input.style.borderColor = '#e53e3e';
+        setTimeout(() => {
+          input.style.borderColor = '#e2e8f0';
+        }, 2000);
+        return;
+      }
 
-  // 100 manipulation/gaslighting tactics
-  const tactics = [
-    "Gaslighting", "DARVO", "Emotional Invalidation", "Guilt-tripping",
-    "Blame-shifting", "Projection", "Deflection", "Stonewalling",
-    "Silent Treatment", "Love-bombing", "Triangulation", "Smear Campaign",
-    "Dehumanization", "Humiliation", "Threats", "Intimidation",
-    "Fear Mongering", "Conditional Approval", "Praise Before Criticism",
-    "Negative Labeling", "Name-Calling", "Catastrophizing", "Minimization",
-    "Selective Memory", "Denial", "Withholding", "Interrupting",
-    "Personal Attacks", "Character Assassination", "Scapegoating",
-    "Whataboutism", "False Equivalence", "Logical Fallacies", "Framing",
-    "Mind Reading", "Redirection", "Token Gesture", "Bait-and-Switch",
-    "Foot-in-the-door", "Door-in-the-face", "Intermittent Reinforcement",
-    "Emotional Blackmail", "Silent Rejection", "Emotional Withdrawal",
-    "Negative Reinforcement", "Positive Reinforcement", "Reward-Punishment",
-    "Love Withdrawal", "Time-Out/Walk Away", "Interpersonal Pressure",
-    "Bandwagon Pressure", "Exaggeration", "Rationalization", "Justification",
-    "Appeal to Authority", "Appeal to Fear", "Appeal to Spite",
-    "Appeal to Ridicule", "Appeal to Tradition", "Appeal to Novelty",
-    "Emotional Hijacking", "Emotional Overload", "Hoovering",
-    "Future Faking", "Flying Monkeys", "Splitting", "Devaluation",
-    "Idealization", "Grey Rock", "Mirroring", "Semantic Manipulation",
-    "Doublespeak", "Euphemism", "Double Bind", "Backhanded Compliment",
-    "Passive Aggression", "Gaslighting by Omission", "Gaslighting by Lying",
-    "Gaslighting by Contradiction", "Moral Highground", "Scare Tactics",
-    "Selective Disclosure", "Overgeneralization", "False Promise",
-    "Stonewalling (silent refusal)", "Labeling Emotions", "Discrediting",
-    "Emotional Flooding", "Minimizing Achievement", "Undermining",
-    "Exclusion", "Isolation", "Triangulation via Rumors", "Conditional Love",
-    "Vaporlighting", "Projection with Accusation", "Regressive Framing",
-    "Defensive Hostility", "Divide and Conquer", "Intellectual Bullying",
-    "Forced Apology", "Competitive One-Upmanship", "Dismissal",
-    "Over-Responsibility Imposition", "Boundary Pushing", "Hostile Questioning"
-  ];
+      btn.disabled = true;
+      btnText.innerHTML = '🔍 Analyzing Your Conversation...';
+      spinner.style.display = 'inline-block';
+      resultsSection.classList.remove('show');
 
-  // build system prompt
-  const systemPrompt = `
-You are a Manipulation Analyst.  When presented with a conversation,
-your job is to scan each line for any of the following manipulation tactics:
+      try {
+        const response = await fetch("/.netlify/functions/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text }),
+        });
 
-${tactics.map((t,i) => `${i+1}. ${t}`).join("\n")}
+        const data = await response.json();
 
-Respond ONLY in this JSON format (no extra text):
-{
-  "tactics": [
-    { "line": <lineNumber>, "tactic": "<tacticName>", "excerpt": "<exact text>" }
-  ],
-  "detected": <true|false>
-}
-If you find no tactics, return:
-{
-  "tactics": [],
-  "detected": false
-}
-`;
+        if (data.detected && Array.isArray(data.tactics) && data.tactics.length > 0) {
+          const formatted = data.tactics.map(item =>
+            `Line ${item.line}: “${item.excerpt}”\n→ Tactic: ${item.tactic}`
+          ).join('\n\n');
 
-  // call OpenAI
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemPrompt.trim() },
-        { role: "user", content: text }
-      ],
-      temperature: 0
-    })
-  });
+          resultsContent.textContent = formatted;
 
-  const payload = await response.json();
-  // payload.choices[0].message.content is already a JSON string
-  return {
-    statusCode: 200,
-    body: payload.choices[0].message.content
-  };
-};
+          resultsCard.className = 'results-card warning-medium';
+          resultsTitle.innerHTML = `
+            <svg class="results-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            🔍 Tactics Detected
+          `;
+        } else {
+          resultsContent.textContent = "✅ No obvious manipulation tactics were detected. Trust your instincts and reflect on how the conversation made you feel.";
+          resultsCard.className = 'results-card warning-low';
+          resultsTitle.innerHTML = `
+            <svg class="results-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            ✅ Looking Good!
+          `;
+        }
+
+        setTimeout(() => {
+          resultsSection.classList.add('show');
+          resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
+      } catch (error) {
+        resultsContent.textContent = "We're sorry, but there was a technical issue analyzing your conversation. Please try again in a moment.";
+        resultsCard.className = 'results-card warning-high';
+        resultsTitle.innerHTML = `
+          <svg class="results-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          ❌ Analysis Error
+        `;
+        resultsSection.classList.add('show');
+        console.error('Analysis error:', error);
+      } finally {
+        btn.disabled = false;
+        btnText.innerHTML = '🚀 Analyze Now - It\'s Free!';
+        spinner.style.display = 'none';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('conversationInput').value = '';
+      document.getElementById('resultsSection').classList.remove('show');
+      document.getElementById('conversationInput').focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('conversationInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        analyzeConversation();
+      }
+    });
+
+    window.addEventListener('load', function() {
+      document.getElementById('conversationInput').focus();
+    });
+  </script>
+</body>
+</html>
